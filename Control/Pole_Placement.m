@@ -9,8 +9,7 @@ Ir=1; %MOI of arm wrt piviot
 g=9.81; %gravity
 
 
-
-a=mp*l*l+Ir;
+a=mp*l*l+Ir+mp*d*d;
 b=mp*l*d;
 C=Ip+mp*d*d;
 D=mp*d*g;
@@ -22,19 +21,17 @@ A=[0 0 1 0;
 
 B=[0;0;b/(a*C-b*b);C/(a*C-b*b)];
 
-desired_poles = [-2, -3, -4, -5]; 
+desired_poles = [-2, -3, -0.4, -0.5]; 
 
-%Check controllability
+
 if rank(ctrb(A, B)) == size(A, 1)
     disp('System is controllable!');
     
-    % Compute state-feedback gain matrix K
     K = place(A, B, desired_poles);
     
     disp('State-feedback gain matrix K:');
     disp(K);
     
-    % Verify closed-loop poles
     A_cl = A - B*K;
     disp('Actual closed-loop poles:');
     disp(eig(A_cl)');

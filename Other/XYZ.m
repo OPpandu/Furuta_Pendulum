@@ -1,24 +1,27 @@
 
-function tau=torque(t,y)
-    % X0=[5.4756*1.0e+05   -2.0897*1.0e+05     1.0249*1.0e+05    -0.4075*1.0e+05]; 
-    X=[78.4773   -0.6269   38.5963   -3.3435];
-    tau=(-1)*X*y;
+function tau=Voltage(t,y)
+    X0=[5.4756*1.0e+05   -2.0897*1.0e+05     1.0249*1.0e+05    -0.4075*1.0e+05]; 
+    X=[542.6753  -62.6911  272.8840  -80.4536];
+    tau=0;
 end
 
 %%differential equations
-function dydt=odefun(t,y,mp,d,Ip,Bp,Br,l,Ir,g)
+
+function dydt=odefun(t,y,mp,d,Ip,Bp,Br,l,Ir,g,Kt,Bm,Ke,L,R)
     
     A=(mp*l*l + mp*d*d*cos(y(1)) + Ir);
     B=mp*l*d*cos(y(1));
     C=(mp*y(3)*y(4)*d*d*sin(2*y(1))) + mp*d*l*sin(y(1))*y(3)*y(3);
     D=(mp*d*(d/2)*sin(2*(y(1)))) + mp*g*d*sin(y(1));
     E=mp*d*d+Ip;
+    tau = Kt * y(5) - Bm * y(3);
     dydt=zeros(4,1);
     dydt(1)= y(3); %theta
     dydt(2)= y(4); %phi
-    dydt(3)= ((torque(t,y) - Br*y(4))*B - (Bp*y(3))*A - (C*B) + (D*A)) / (E*A) ;    %theta.
-    dydt(4)= ((torque(t,y)-Br*y(4)) - C + B * dydt(3))/A ;     %phi.
-    
+    dydt(3)= ((tau - Br*y(4))*B - (Bp*y(3))*A - (C*B) + (D*A)) / (E*A) ;    %theta.
+    dydt(4)= ((tau-Br*y(4)) - C + B * dydt(3))/A ;     %phi.
+    dydt(5) = (Voltage - R*y(5) - Ke*y(3)) / L;
+
 end
 
 function dydt=D(t,y)
@@ -31,40 +34,48 @@ function dydt=D(t,y)
     l=1; %length of arm
     Ir=1; %MOI of arm wrt piviot
     g=9.81; %gravity
-    dydt=odefun(t,y,mp,d,Ip,Bp,Br,l,Ir,g);
+
+    %%%%% I DONT KNOW WHERE TO USE THIS OR NOT%%%%%
+    Kt=1; %motor torque constant
+    Bm=0; %motor damping
+    Ke=0; %back emf coefficient
+    L=1;  %self inductance of motor
+    R=0;  %load resistance
+    dydt=odefun(t,y,mp,d,Ip,Bp,Br,l,Ir,g,Kt,Bm,Ke,L,R);
 end
 
 
 %simulation
 
-y0=[pi/9 0 0 0];
-t1=[0 10];
+y0=[pi/10 0 0 0 0];
+t1=[0 100];
 [t,y]=ode45(@D,t1,y0');
 
 
-figure;
-subplot(2,1,1);
-plot(t, y(:,1), 'r', 'LineWidth', 1.5); hold on;
-plot(t, y(:,2), 'b', 'LineWidth', 1.5);
-xlabel('Time (s)');
-ylabel('Angles (rad)');
-legend('\theta (rod)', '\alpha (pendulum)');
-title('Angular Positions');
-grid on;
-
-subplot(2,1,2);
-plot(t, y(:,3), 'r--', 'LineWidth', 1.5); hold on;
-plot(t, y(:,4), 'b--', 'LineWidth', 1.5);
-xlabel('Time (s)');
-ylabel('Angular Velocities (rad/s)');
-legend('\dot{\theta} (rod)', '\dot{\alpha} (pendulum)');
-title('Angular Velocities');
-grid on;
+% figure;
+% subplot(2,1,1);
+% plot(t, y(:,1), 'r', 'LineWidth', 1.5); hold on;
+% plot(t, y(:,2), 'b', 'LineWidth', 1.5);
+% xlabel('Time (s)');
+% ylabel('Angles (rad)');
+% legend('\theta (rod)', '\alpha (pendulum)');
+% title('Angular Positions');
+% grid on;
+% 
+% subplot(2,1,2);
+% plot(t, y(:,3), 'r--', 'LineWidth', 1.5); hold on;
+% plot(t, y(:,4), 'b--', 'LineWidth', 1.5);
+% xlabel('Time (s)');
+% ylabel('Angular Velocities (rad/s)');
+% legend('\dot{\theta} (rod)', '\dot{\alpha} (pendulum)');
+% title('Angular Velocities');
+% grid on;
 
 
 
 
 %plot% 
+
 
 L1 = 1;  % Length of arm
 L2 = 0.5; % Length of pendulum
