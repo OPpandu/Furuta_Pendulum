@@ -1,81 +1,97 @@
-
-function tau=Voltage(t,y)
-    X0=[5.4756*1.0e+05   -2.0897*1.0e+05     1.0249*1.0e+05    -0.4075*1.0e+05]; 
-    X=[542.6753  -62.6911  272.8840  -80.4536];
-    tau=0;
+function V = Voltage(t, y)
+    k = 1e+03 * [4.4803, -0.0000, 2.2416, -0.0023, 0.0000];
+    V = dot(k, y);  % or: V = k * y'; if y is a column vector
 end
 
-%%differential equations
 
-function dydt=odefun(t,y,mp,d,Ip,Bp,Br,l,Ir,g,Kt,Bm,Ke,L,R)
+%%differential equations
+function dydt=odefun(t,y,mp,d,Ip,Bp,Br,l,Ir,g,R,L,Kt,Ke,Bm)
     
     A=(mp*l*l + mp*d*d*cos(y(1)) + Ir);
     B=mp*l*d*cos(y(1));
     C=(mp*y(3)*y(4)*d*d*sin(2*y(1))) + mp*d*l*sin(y(1))*y(3)*y(3);
     D=(mp*d*(d/2)*sin(2*(y(1)))) + mp*g*d*sin(y(1));
     E=mp*d*d+Ip;
-    tau = Kt * y(5) - Bm * y(3);
-    dydt=zeros(4,1);
+    torque= Kt*y(5) - Bm*y(3);
+    
+
+    dydt=zeros(5,1);
     dydt(1)= y(3); %theta
     dydt(2)= y(4); %phi
-    dydt(3)= ((tau - Br*y(4))*B - (Bp*y(3))*A - (C*B) + (D*A)) / (E*A) ;    %theta.
-    dydt(4)= ((tau-Br*y(4)) - C + B * dydt(3))/A ;     %phi.
-    dydt(5) = (Voltage - R*y(5) - Ke*y(3)) / L;
+    dydt(3)= ((torque - Br*y(4))*B - (Bp*y(3))*A - (C*B) + (D*A)) / (E*A) ;    %theta.
+    dydt(4)= ((torque-Br*y(4)) - C + B * dydt(3))/A ;     %phi.
+    dydt(5) = (Voltage(t,y) - R*y(5) - Ke*y(3)) / L; %current .
+
 
 end
 
 function dydt=D(t,y)
     %constants%
+        
     mp=1; % mass of pendulum
     d=0.5; %distance of COM of pendulum from piviot
     Ip=1; %MOI of pendulum about COM;
     Bp=0; %damping coefficient of pendulum
     Br=0; %damping coefficient of arm
     l=1; %length of arm
-    Ir=1; %MOI of arm wrt piviot
+    Ir=10; %MOI of arm wrt piviot
     g=9.81; %gravity
-
-    %%%%% I DONT KNOW WHERE TO USE THIS OR NOT%%%%%
-    Kt=1; %motor torque constant
-    Bm=0; %motor damping
-    Ke=0; %back emf coefficient
-    L=1;  %self inductance of motor
-    R=0;  %load resistance
-    dydt=odefun(t,y,mp,d,Ip,Bp,Br,l,Ir,g,Kt,Bm,Ke,L,R);
+    R = 2.0;    % Resistance
+    L = 0.01;   % Inductance
+    Kt = 0.1;   % Torque constant
+    Ke = 0.1;   % Back-EMF constant
+    Bm = 0.01;  % Motor damping 
+    dydt=odefun(t,y,mp,d,Ip,Bp,Br,l,Ir,g,R,L,Kt,Ke,Bm);
 end
 
 
 %simulation
 
-y0=[pi/10 0 0 0 0];
+y0=[(pi/6) 0 0 0 0];
 t1=[0 100];
 [t,y]=ode45(@D,t1,y0');
 
 
-% figure;
-% subplot(2,1,1);
-% plot(t, y(:,1), 'r', 'LineWidth', 1.5); hold on;
-% plot(t, y(:,2), 'b', 'LineWidth', 1.5);
-% xlabel('Time (s)');
-% ylabel('Angles (rad)');
-% legend('\theta (rod)', '\alpha (pendulum)');
-% title('Angular Positions');
-% grid on;
-% 
-% subplot(2,1,2);
-% plot(t, y(:,3), 'r--', 'LineWidth', 1.5); hold on;
-% plot(t, y(:,4), 'b--', 'LineWidth', 1.5);
-% xlabel('Time (s)');
-% ylabel('Angular Velocities (rad/s)');
-% legend('\dot{\theta} (rod)', '\dot{\alpha} (pendulum)');
-% title('Angular Velocities');
-% grid on;
+figure;
+subplot(2,1,1);
+plot(t, y(:,1), 'r', 'LineWidth', 1.5); hold on;
+plot(t, y(:,2), 'b', 'LineWidth', 1.5);
+xlabel('Time (s)');
+ylabel('Angles (rad)');
+legend('\theta (rod)', '\alpha (pendulum)');
+title('Angular Positions');
+grid on;
 
+subplot(2,1,2);
+plot(t, y(:,5), 'r--', 'LineWidth', 1.5); hold on;
+xlabel("TIME");
+ylabel("current");
+grid on;
+
+%% Updated Visualization (Add Energy Plot)
+figure;
+subplot(3,1,1);
+plot(t, y(:,1), 'r', t, y(:,2), 'b');
+legend('\alpha (pendulum)', '\theta (arm)');
+title('Angular Positions');
+grid on;
+
+subplot(3,1,2);
+plot(t, y(:,5), 'g');
+ylabel('Current (A)');
+title('Motor Current');
+grid on;
+
+subplot(3,1,3);
+energy = 0.5*1*y(:,3).^2 + 1*9.81*0.5*(1 - cos(y(:,1))); % E = 0.5Ipω² + mgh
+plot(t, energy, 'k');
+ylabel('Energy (J)');
+title('Pendulum Energy');
+grid on;
 
 
 
 %plot% 
-
 
 L1 = 1;  % Length of arm
 L2 = 0.5; % Length of pendulum

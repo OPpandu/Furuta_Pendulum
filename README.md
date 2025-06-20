@@ -1,2 +1,2 @@
 # Furuta_Pendulum
-control design of a rotary inverted pendulum along with reinforcement learning techniques
+control design of a rotary inverted pendulum along with control methods, cad files, simulations, materials etc

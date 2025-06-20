@@ -1,0 +1,8 @@
+AS5600 Magnetic Encoder
+GA12-N20 Integrated Encoder
+N20 Micro Gear Motor
+Brushed DC Motor for theta measurement
+L298N Dual H-Bridge
+Arduino Uno
+L298N Dual H-Bridge
+wires
